@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements
-COPY backend/requirements.txt ./
+COPY backend/requirements.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -31,6 +31,13 @@ COPY backend ./backend
 
 # Copy built frontend from build stage
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
+
+# Create logs directory
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Expose port
 EXPOSE 5000
@@ -43,6 +50,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 ENV FLASK_APP=backend/app.py
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
+ENV PORT=5000
 
-# Run the backend server
-CMD ["python", "backend/app.py"]
+# Run the entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
