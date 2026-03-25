@@ -24,9 +24,9 @@ export default function ChartSection() {
     try {
       setLoading(true);
       const [countryRes, timelineRes, categoryRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/chart-data?type=by_country'),
-        axios.get('http://localhost:5000/api/chart-data?type=timeline'),
-        axios.get('http://localhost:5000/api/chart-data?type=by_category'),
+        axios.get('/api/chart-data?type=by_country'),
+        axios.get('/api/chart-data?type=timeline'),
+        axios.get('/api/chart-data?type=by_category'),
       ]);
 
       // Process country data for bar chart

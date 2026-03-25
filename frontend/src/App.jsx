@@ -26,9 +26,9 @@ function App() {
     try {
       setLoading(true);
       const [summaryRes, countriesRes, globalRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/summary'),
-        axios.get('http://localhost:5000/api/countries'),
-        axios.get('http://localhost:5000/api/global-metrics')
+        axios.get('/api/summary'),
+        axios.get('/api/countries'),
+        axios.get('/api/global-metrics')
       ]);
 
       setData({
