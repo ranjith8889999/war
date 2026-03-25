@@ -15,7 +15,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import sqlite3
 from dotenv import load_dotenv
-from logger_config import LogConfig, setup_logger
+from backend.logger_config import LogConfig, setup_logger
 
 # Load environment variables
 load_dotenv()
