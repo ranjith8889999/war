@@ -38,8 +38,9 @@ COPY backend ./backend
 # Copy built frontend from build stage
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Create logs directory
+# Create logs and data directories
 RUN mkdir -p /app/logs && chmod 777 /app/logs
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Expose port
 EXPOSE 80
@@ -55,4 +56,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=80
 
 # Run the backend server with Gunicorn (production WSGI server)
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "backend.app:app"]
+# --preload: Load app before forking workers (ensures DB initialization happens once)
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "--preload", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "backend.app:app"]
