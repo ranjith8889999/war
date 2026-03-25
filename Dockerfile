@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install setuptools
+# Upgrade pip, setuptools, and wheel first
 RUN pip install --upgrade pip setuptools wheel
 
 # Copy backend requirements
@@ -28,6 +28,9 @@ COPY backend/requirements.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Force reinstall setuptools to ensure pkg_resources is available
+RUN pip install --force-reinstall --no-cache-dir setuptools
 
 # Copy backend code
 COPY backend ./backend
