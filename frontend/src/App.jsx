@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
+
+// Configure axios defaults
+axios.defaults.timeout = 10000; // 10 second timeout
 import Dashboard from './components/Dashboard';
 import CountryBrowser from './components/CountryBrowser';
 import ChartSection from './components/ChartSection';
@@ -31,16 +34,24 @@ function App() {
         axios.get('/api/global-metrics')
       ]);
 
-      setData({
-        summary: summaryRes.data,
-        countries: countriesRes.data,
-        global: globalRes.data
-      });
-      setError(null);
+      // Only update state if we got valid data
+      if (summaryRes.data && countriesRes.data && globalRes.data) {
+        setData({
+          summary: summaryRes.data,
+          countries: countriesRes.data,
+          global: globalRes.data
+        });
+        setError(null); // Clear any previous errors on success
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load data. Please check if the backend service is running and accessible.');
-      setLoading(false);
+      // Only set error if we don't have any data yet
+      if (!data.countries || data.countries.length === 0) {
+        setError('Failed to load data. Please check if the backend service is running and accessible.');
+      } else {
+        // If we already have data, just log the error but keep showing existing data
+        console.warn('Failed to refresh data, keeping existing data:', err.message);
+      }
     } finally {
       setLoading(false);
     }

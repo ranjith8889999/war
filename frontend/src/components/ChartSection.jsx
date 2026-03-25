@@ -24,10 +24,17 @@ export default function ChartSection() {
     try {
       setLoading(true);
       const [countryRes, timelineRes, categoryRes] = await Promise.all([
-        axios.get('/api/chart-data?type=by_country'),
-        axios.get('/api/chart-data?type=timeline'),
-        axios.get('/api/chart-data?type=by_category'),
+        axios.get('/api/chart-data?type=by_country', { timeout: 10000 }),
+        axios.get('/api/chart-data?type=timeline', { timeout: 10000 }),
+        axios.get('/api/chart-data?type=by_category', { timeout: 10000 }),
       ]);
+
+      // Validate responses before processing
+      if (!countryRes.data || !timelineRes.data || !categoryRes.data) {
+        console.error('Invalid chart data received');
+        setLoading(false);
+        return;
+      }
 
       // Process country data for bar chart
       const countryData = countryRes.data.labels.map((label, idx) => ({

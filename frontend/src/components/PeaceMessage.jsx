@@ -9,14 +9,20 @@ export default function PeaceMessage({ data }) {
   useEffect(() => {
     const fetchPeaceMessage = async () => {
       try {
-        const res = await axios.get('/api/peace-message');
-        setPeaceData(res.data);
+        const res = await axios.get('/api/peace-message', { timeout: 10000 });
+        if (res.data) {
+          setPeaceData(res.data);
+        }
       } catch (err) {
         console.error('Error fetching peace message:', err);
+        // Don't set error state, just fail silently
       }
     };
-    fetchPeaceMessage();
-  }, []);
+    
+    if (data?.summary) {
+      fetchPeaceMessage();
+    }
+  }, [data?.summary]);
 
   if (!peaceData || !data?.summary) return null;
 
