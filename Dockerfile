@@ -54,5 +54,5 @@ ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
 ENV PORT=5000
 
-# Run the backend server directly (no shell script needed)
-CMD ["python", "-u", "backend/app.py"]
+# Run the backend server with Gunicorn (production WSGI server)
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "backend.app:app"]
