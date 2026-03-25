@@ -36,6 +36,10 @@ wheels/
 instance/
 .webassets-cache
 
+# Logs
+logs/
+*.log
+
 # IDE
 .vscode/
 .idea/
