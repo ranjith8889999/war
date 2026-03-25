@@ -39,7 +39,7 @@ function App() {
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load data. Ensure backend is running on port 5000.');
+      setError('Failed to load data. Please check if the backend service is running and accessible.');
       setLoading(false);
     } finally {
       setLoading(false);
