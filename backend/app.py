@@ -6,20 +6,33 @@ Promoting peace between US, Israel, and Iran using data-driven insights
 import os
 import json
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import sqlite3
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__)
-CORS(app)
+frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
+
+# CORS configuration
+cors_origins = os.getenv('CORS_ORIGINS', '*')
+CORS(app, resources={r"/api/*": {"origins": cors_origins.split(',') if cors_origins != '*' else '*'}})
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///war_data.db'
+database_url = os.getenv('DATABASE_URL', 'sqlite:///war_data.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Secret key for sessions
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
 db = SQLAlchemy(app)
 
 # Scheduler setup
@@ -355,9 +368,35 @@ def peace_message():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ============================================
+# FRONTEND ROUTES
+# ============================================
+
+@app.route('/')
+def index():
+    """Serve the frontend index.html"""
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files or redirect to index.html for client-side routing"""
+    file_path = os.path.join(app.static_folder, path)
+    
+    # If file exists, serve it
+    if os.path.isfile(file_path):
+        return send_from_directory(app.static_folder, path)
+    
+    # For all other routes, serve index.html (for React Router)
+    return send_from_directory(app.static_folder, 'index.html')
+
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
+    """Serve index.html for 404s to support client-side routing"""
+    # Check if it's an API call
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Endpoint not found'}), 404
+    # For non-API routes, serve the frontend
+    return send_from_directory(app.static_folder, 'index.html'), 200
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -383,8 +422,13 @@ if __name__ == '__main__':
             replace_existing=True
         )
     
+    # Get port from environment or use default
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_ENV', 'development') == 'development'
+    
     print("✓ Backend server starting...")
-    print("✓ API available at http://localhost:5000")
+    print(f"✓ API available at http://localhost:{port}")
+    print(f"✓ Environment: {'Development' if debug else 'Production'}")
     print("✓ Scheduler activated - daily updates at 12:00 AM")
     
-    app.run(debug=True, port=5000)
+    app.run(debug=debug, host='0.0.0.0', port=port)
