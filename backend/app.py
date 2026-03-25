@@ -465,49 +465,55 @@ def internal_error(error):
 # STARTUP
 # ============================================
 
+# Initialize database on module import (runs with both Flask dev server and Gunicorn)
+logger.info("=" * 80)
+logger.info("Initializing application startup...")
+logger.info("=" * 80)
+
+with app.app_context():
+    try:
+        logger.info("Creating database tables...")
+        db.create_all()
+        logger.info("✓ Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {str(e)}", exc_info=True)
+        raise
+    
+    try:
+        logger.info("Initializing database data...")
+        initialize_data()
+        logger.info("✓ Database initialization complete")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {str(e)}", exc_info=True)
+        raise
+    
+    # Schedule daily update at 12:00 AM
+    try:
+        scheduler.add_job(
+            func=update_war_data,
+            trigger='cron',
+            hour=0,
+            minute=0,
+            id='daily_war_update',
+            name='Update war impact data daily',
+            replace_existing=True
+        )
+        logger.info("✓ Scheduled task configured: War data update at 12:00 AM")
+    except Exception as e:
+        logger.error(f"Failed to configure scheduled task: {str(e)}", exc_info=True)
+
+logger.info("=" * 80)
+logger.info("✓ Backend initialized and ready")
+logger.info("=" * 80)
+
+# Run with Flask dev server (only when executed directly)
 if __name__ == '__main__':
-    logger.info("=" * 80)
-    logger.info("Initializing application startup...")
-    logger.info("=" * 80)
-    
-    with app.app_context():
-        try:
-            logger.info("Creating database tables...")
-            db.create_all()
-            logger.info("✓ Database tables created successfully")
-        except Exception as e:
-            logger.error(f"Failed to create database tables: {str(e)}", exc_info=True)
-            raise
-        
-        try:
-            logger.info("Initializing database data...")
-            initialize_data()
-            logger.info("✓ Database initialization complete")
-        except Exception as e:
-            logger.error(f"Failed to initialize database: {str(e)}", exc_info=True)
-            raise
-        
-        # Schedule daily update at 12:00 AM
-        try:
-            scheduler.add_job(
-                func=update_war_data,
-                trigger='cron',
-                hour=0,
-                minute=0,
-                id='daily_war_update',
-                name='Update war impact data daily',
-                replace_existing=True
-            )
-            logger.info("✓ Scheduled task configured: War data update at 12:00 AM")
-        except Exception as e:
-            logger.error(f"Failed to configure scheduled task: {str(e)}", exc_info=True)
-    
     # Get port from environment or use default
     port = int(os.getenv('PORT', 80))
     debug = os.getenv('FLASK_ENV', 'development') == 'development'
     
     logger.info("=" * 80)
-    logger.info("✓ Backend server starting...")
+    logger.info("✓ Starting Flask development server...")
     logger.info(f"✓ API available at http://localhost:{port}")
     logger.info(f"✓ Environment: {'Development' if debug else 'Production'}")
     logger.info(f"✓ Logs directory: {LogConfig.LOGS_DIR}")
