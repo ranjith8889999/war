@@ -35,10 +35,6 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 # Create logs directory
 RUN mkdir -p /app/logs && chmod 777 /app/logs
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
-
 # Expose port
 EXPOSE 5000
 
@@ -52,5 +48,5 @@ ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
 ENV PORT=5000
 
-# Run the entrypoint script
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# Run the backend server directly (no shell script needed)
+CMD ["python", "-u", "backend/app.py"]
