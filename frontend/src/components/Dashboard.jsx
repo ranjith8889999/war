@@ -28,8 +28,9 @@ export default function Dashboard({ data, loading }) {
     total_daily_loss: summary.total_daily_loss || 0,
     total_cumulative_loss: summary.total_cumulative_loss || 0,
     average_gdp_slowdown: summary.average_gdp_slowdown || 0,
-    most_affected: Array.isArray(summary.most_affected) ? summary.most_affected : [],
-    last_update: summary.last_update || new Date().toISOString()
+    top_affected_countries: Array.isArray(summary.top_affected_countries) ? summary.top_affected_countries : [],
+    total_countries: summary.total_countries || 0,
+    last_update: summary.date || new Date().toISOString()
   };
 
   const containerVariants = {
@@ -102,7 +103,7 @@ export default function Dashboard({ data, loading }) {
         </div>
 
         <div className="space-y-3">
-          {(safeSummary.most_affected || []).map((country, idx) => (
+          {(safeSummary.top_affected_countries || []).map((country, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, x: -20 }}
@@ -139,7 +140,7 @@ export default function Dashboard({ data, loading }) {
           className="mt-8 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg"
         >
           <p className="text-blue-200 text-sm">
-            <strong>Total Countries Tracked:</strong> {data?.countries?.length || 0}
+            <strong>Total Countries Tracked:</strong> {safeSummary.total_countries || 0}
           </p>
         </motion.div>
       </motion.div>
