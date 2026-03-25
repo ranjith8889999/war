@@ -15,7 +15,7 @@ import './App.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({ summary: null, countries: [], global: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

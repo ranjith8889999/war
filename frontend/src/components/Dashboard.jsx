@@ -13,7 +13,7 @@ export default function Dashboard({ data, loading }) {
     );
   }
 
-  if (!data?.summary) {
+  if (!data?.summary ||typeof data.summary !== 'object') {
     return (
       <div className="bg-red-900/30 border border-red-500 text-red-200 p-6 rounded-lg mb-16">
         No data available
@@ -22,6 +22,15 @@ export default function Dashboard({ data, loading }) {
   }
 
   const { summary } = data;
+
+  // Ensure all required fields exist with default values
+  const safeSummary = {
+    total_daily_loss: summary.total_daily_loss || 0,
+    total_cumulative_loss: summary.total_cumulative_loss || 0,
+    average_gdp_slowdown: summary.average_gdp_slowdown || 0,
+    most_affected: Array.isArray(summary.most_affected) ? summary.most_affected : [],
+    last_update: summary.last_update || new Date().toISOString()
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -52,7 +61,7 @@ export default function Dashboard({ data, loading }) {
         >
           <p className="text-red-200 text-sm mb-2">Total Daily Loss</p>
           <p className="text-4xl font-bold text-white mb-2">
-            ${(summary.total_daily_loss / 1000).toFixed(1)}B
+            ${(safeSummary.total_daily_loss / 1000).toFixed(1)}B
           </p>
           <p className="text-red-100 text-xs">USD</p>
         </motion.div>
@@ -64,7 +73,7 @@ export default function Dashboard({ data, loading }) {
         >
           <p className="text-orange-200 text-sm mb-2">Cumulative Loss (30 days)</p>
           <p className="text-4xl font-bold text-white mb-2">
-            ${(summary.total_cumulative_loss / 1000).toFixed(1)}B
+            ${(safeSummary.total_cumulative_loss / 1000).toFixed(1)}B
           </p>
           <p className="text-orange-100 text-xs">USD</p>
         </motion.div>
@@ -76,7 +85,7 @@ export default function Dashboard({ data, loading }) {
         >
           <p className="text-yellow-200 text-sm mb-2">Avg GDP Slowdown</p>
           <p className="text-4xl font-bold text-white mb-2">
-            {summary.average_gdp_slowdown.toFixed(3)}%
+            {safeSummary.average_gdp_slowdown.toFixed(3)}%
           </p>
           <p className="text-yellow-100 text-xs">Per Day, Global</p>
         </motion.div>
@@ -93,7 +102,7 @@ export default function Dashboard({ data, loading }) {
         </div>
 
         <div className="space-y-3">
-          {summary.top_affected_countries.map((country, idx) => (
+          {(safeSummary.most_affected || []).map((country, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, x: -20 }}
@@ -130,7 +139,7 @@ export default function Dashboard({ data, loading }) {
           className="mt-8 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg"
         >
           <p className="text-blue-200 text-sm">
-            <strong>Total Countries Tracked:</strong> {summary.total_countries}
+            <strong>Total Countries Tracked:</strong> {data?.countries?.length || 0}
           </p>
         </motion.div>
       </motion.div>
