@@ -1,0 +1,390 @@
+"""
+Peace Coalition Website Backend
+Promoting peace between US, Israel, and Iran using data-driven insights
+"""
+
+import os
+import json
+from datetime import datetime, timedelta
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+import sqlite3
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///war_data.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Scheduler setup
+scheduler = BackgroundScheduler()
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
+# ============================================
+# DATABASE MODELS
+# ============================================
+
+class CountryData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    country = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    daily_loss = db.Column(db.Float, nullable=False)
+    cumulative_loss = db.Column(db.Float, nullable=False)
+    gdp_slowdown_percent = db.Column(db.Float, nullable=False)
+    energy_impact = db.Column(db.String(100))
+    category = db.Column(db.String(50))  # 'Direct War', 'Energy Importer', 'Energy Exporter'
+    
+    def to_dict(self):
+        return {
+            'country': self.country,
+            'date': self.date.isoformat(),
+            'daily_loss': self.daily_loss,
+            'cumulative_loss': self.cumulative_loss,
+            'gdp_slowdown_percent': self.gdp_slowdown_percent,
+            'energy_impact': self.energy_impact,
+            'category': self.category
+        }
+
+class GlobalMetrics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime, nullable=False)
+    global_daily_loss = db.Column(db.Float, nullable=False)
+    global_gdp_slowdown = db.Column(db.Float, nullable=False)
+    trade_loss = db.Column(db.Float, nullable=False)
+    oil_price = db.Column(db.Float, nullable=False)
+    strait_closure_percent = db.Column(db.Float, nullable=False)
+    
+    def to_dict(self):
+        return {
+            'date': self.date.isoformat(),
+            'global_daily_loss': self.global_daily_loss,
+            'global_gdp_slowdown': self.global_gdp_slowdown,
+            'trade_loss': self.trade_loss,
+            'oil_price': self.oil_price,
+            'strait_closure_percent': self.strait_closure_percent
+        }
+
+# ============================================
+# DATA INITIALIZATION
+# ============================================
+
+COUNTRY_DATA = {
+    'direct_war': {
+        'Israel': {'daily_loss': 414, 'category': 'Direct War'},
+        'USA': {'daily_loss': 1000, 'category': 'Direct War'},
+        'Iran': {'daily_loss': 300, 'category': 'Direct War'},
+    },
+    'energy_exporters': {
+        'Saudi Arabia': {'daily_loss': 1000, 'category': 'Energy Exporter', 'energy_impact': '+19.1% GDP from oil prices'},
+        'UAE': {'daily_loss': 350, 'category': 'Energy Exporter', 'energy_impact': 'High revenue gains'},
+        'Qatar': {'daily_loss': 300, 'category': 'Energy Exporter', 'energy_impact': '17% LNG capacity loss'},
+        'Kuwait': {'daily_loss': 200, 'category': 'Energy Exporter', 'energy_impact': 'Export constrained'},
+        'Oman': {'daily_loss': 150, 'category': 'Energy Exporter', 'energy_impact': 'Refinancing risks'},
+        'Iraq': {'daily_loss': 300, 'category': 'Energy Exporter', 'energy_impact': 'Critical exporter'},
+    },
+    'energy_importers': {
+        'South Korea': {'daily_loss': 892, 'category': 'Energy Importer', 'energy_impact': '73% from Gulf - CRITICAL'},
+        'Germany': {'daily_loss': 742, 'category': 'Energy Importer', 'energy_impact': '1.5% GDP energy deficit'},
+        'India': {'daily_loss': 685, 'category': 'Energy Importer', 'energy_impact': '2.6% GDP energy deficit'},
+        'UK': {'daily_loss': 580, 'category': 'Energy Importer', 'energy_impact': '+0.5% inflation expected'},
+        'Egypt': {'daily_loss': 550, 'category': 'Energy Importer', 'energy_impact': '+$6.8B annual import'},
+        'France': {'daily_loss': 420, 'category': 'Energy Importer', 'energy_impact': 'Industrial slowdown'},
+        'Bangladesh': {'daily_loss': 245, 'category': 'Energy Importer', 'energy_impact': 'High vulnerability'},
+        'Pakistan': {'daily_loss': 320, 'category': 'Energy Importer', 'energy_impact': 'Energy-dependent'},
+        'Sri Lanka': {'daily_loss': 125, 'category': 'Energy Importer', 'energy_impact': 'Economic pressure'},
+    },
+    'exporters_winners': {
+        'Norway': {'daily_loss': -250, 'category': 'Energy Exporter', 'energy_impact': '+19.1% GDP surplus - WINNER'},
+    }
+}
+
+def initialize_data():
+    """Initialize database with war impact data"""
+    try:
+        # Check if data already exists
+        if CountryData.query.first():
+            return
+        
+        today = datetime.now()
+        cumulative_loss = 0
+        
+        # Add country-specific data
+        all_countries_combined = {}
+        for category, countries in COUNTRY_DATA.items():
+            all_countries_combined.update(countries)
+        
+        for country, data in all_countries_combined.items():
+            daily_loss = data['daily_loss']
+            cumulative_loss = daily_loss * 30  # 30 days of losses
+            
+            # Calculate GDP slowdown
+            if 'Energy Importer' in data['category']:
+                gdp_slowdown = 0.15  # 0.15% per day for importers
+            elif 'Energy Exporter' in data['category']:
+                gdp_slowdown = 0.05  # 0.05% gain per day for exporters
+            else:
+                gdp_slowdown = 0.3  # 0.3% per day for direct war countries
+            
+            record = CountryData(
+                country=country,
+                date=today,
+                daily_loss=daily_loss,
+                cumulative_loss=cumulative_loss,
+                gdp_slowdown_percent=gdp_slowdown,
+                energy_impact=data.get('energy_impact', ''),
+                category=data['category']
+            )
+            db.session.add(record)
+        
+        # Add global metrics
+        total_daily_loss = sum([data['daily_loss'] for data in all_countries_combined.values() if data['daily_loss'] > 0])
+        
+        global_metric = GlobalMetrics(
+            date=today,
+            global_daily_loss=total_daily_loss,
+            global_gdp_slowdown=0.18,  # 0.18% global GDP slowdown per day
+            trade_loss=340,  # $340 million in trade losses per day
+            oil_price=120,  # $120/barrel
+            strait_closure_percent=97
+        )
+        db.session.add(global_metric)
+        db.session.commit()
+        print("Database initialized successfully!")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        db.session.rollback()
+
+def update_war_data():
+    """Scheduled task to update war data daily"""
+    try:
+        today = datetime.now()
+        
+        # Rebuild all_countries for this function
+        all_countries_combined = {}
+        for category, countries in COUNTRY_DATA.items():
+            all_countries_combined.update(countries)
+        
+        # Update each country's data
+        for country_name, country_data in all_countries_combined.items():
+            daily_loss = country_data['daily_loss']
+            
+            # Get previous cumulative loss
+            last_record = CountryData.query.filter_by(country=country_name).order_by(
+                CountryData.date.desc()
+            ).first()
+            
+            if last_record:
+                cumulative_loss = last_record.cumulative_loss + daily_loss
+            else:
+                cumulative_loss = daily_loss
+            
+            record = CountryData(
+                country=country_name,
+                date=today,
+                daily_loss=daily_loss,
+                cumulative_loss=cumulative_loss,
+                gdp_slowdown_percent=country_data.get('gdp_slowdown', 0.15),
+                energy_impact=country_data.get('energy_impact', ''),
+                category=country_data['category']
+            )
+            db.session.add(record)
+        
+        # Update global metrics
+        total_daily_loss = sum([data['daily_loss'] for data in all_countries_combined.values() if data['daily_loss'] > 0])
+        
+        global_metric = GlobalMetrics(
+            date=today,
+            global_daily_loss=total_daily_loss,
+            global_gdp_slowdown=0.18,
+            trade_loss=340,
+            oil_price=120 + (0.5 * (today - datetime.now()).days),  # Oil price trend
+            strait_closure_percent=97
+        )
+        db.session.add(global_metric)
+        db.session.commit()
+        print(f"War data updated on {today}")
+    except Exception as e:
+        print(f"Error updating war data: {e}")
+        db.session.rollback()
+
+# ============================================
+# API ENDPOINTS
+# ============================================
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'ok', 'timestamp': datetime.now().isoformat()})
+
+@app.route('/api/countries', methods=['GET'])
+def get_countries():
+    """Get all countries and their latest data"""
+    try:
+        countries = CountryData.query.all()
+        return jsonify([country.to_dict() for country in countries])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/countries/<country_name>', methods=['GET'])
+def get_country_data(country_name):
+    """Get time series data for a specific country"""
+    try:
+        records = CountryData.query.filter_by(country=country_name).order_by(
+            CountryData.date
+        ).all()
+        return jsonify([record.to_dict() for record in records])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/global-metrics', methods=['GET'])
+def get_global_metrics():
+    """Get global economic impact metrics"""
+    try:
+        metrics = GlobalMetrics.query.order_by(GlobalMetrics.date.desc()).limit(30).all()
+        return jsonify([metric.to_dict() for metric in reversed(metrics)])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/summary', methods=['GET'])
+def get_summary():
+    """Get summary statistics"""
+    try:
+        latest_date = db.session.query(db.func.max(CountryData.date)).scalar()
+        
+        if not latest_date:
+            return jsonify({'error': 'No data available'}), 404
+        
+        countries = CountryData.query.filter_by(date=latest_date).all()
+        
+        total_daily_loss = sum(c.daily_loss for c in countries if c.daily_loss > 0)
+        total_cumulative = sum(c.cumulative_loss for c in countries)
+        avg_gdp_slowdown = sum(c.gdp_slowdown_percent for c in countries) / len(countries) if countries else 0
+        
+        # Sort countries by loss
+        sorted_countries = sorted([c.to_dict() for c in countries], 
+                                 key=lambda x: x['daily_loss'], reverse=True)
+        
+        return jsonify({
+            'date': latest_date.isoformat(),
+            'total_daily_loss': total_daily_loss,
+            'total_cumulative_loss': total_cumulative,
+            'average_gdp_slowdown': avg_gdp_slowdown,
+            'top_affected_countries': sorted_countries[:10],
+            'total_countries': len(countries)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chart-data', methods=['GET'])
+def get_chart_data():
+    """Get data formatted for charts"""
+    try:
+        chart_type = request.args.get('type', 'by_country')
+        
+        if chart_type == 'by_country':
+            latest_date = db.session.query(db.func.max(CountryData.date)).scalar()
+            countries = CountryData.query.filter_by(date=latest_date).all()
+            
+            labels = [c.country for c in countries]
+            data = [c.daily_loss for c in countries]
+            colors = ['#ef4444' if c.daily_loss > 500 else '#f97316' if c.daily_loss > 200 else '#eab308' 
+                     for c in countries]
+            
+            return jsonify({
+                'labels': labels,
+                'data': data,
+                'colors': colors
+            })
+        
+        elif chart_type == 'timeline':
+            metrics = GlobalMetrics.query.order_by(GlobalMetrics.date).all()
+            dates = [m.date.strftime('%Y-%m-%d') for m in metrics]
+            losses = [m.global_daily_loss for m in metrics]
+            gdp_slowdown = [m.global_gdp_slowdown for m in metrics]
+            
+            return jsonify({
+                'dates': dates,
+                'daily_losses': losses,
+                'gdp_slowdown': gdp_slowdown
+            })
+        
+        elif chart_type == 'by_category':
+            latest_date = db.session.query(db.func.max(CountryData.date)).scalar()
+            countries = CountryData.query.filter_by(date=latest_date).all()
+            
+            categories = {}
+            for country in countries:
+                cat = country.category
+                if cat not in categories:
+                    categories[cat] = 0
+                categories[cat] += country.daily_loss
+            
+            return jsonify({
+                'labels': list(categories.keys()),
+                'data': list(categories.values())
+            })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/peace-message', methods=['GET'])
+def peace_message():
+    """Get peace promotion message with statistics"""
+    try:
+        summary = get_summary().get_json()
+        
+        message = {
+            'title': 'Global Peace Initiative - Economic Impact Report',
+            'urgent_message': 'The ongoing conflict is causing severe global economic damage.',
+            'call_to_action': 'US, Israel, and Iran must negotiate peace immediately!',
+            'economic_facts': {
+                'daily_global_loss': f"${summary['total_daily_loss']:.0f}M USD",
+                'monthly_loss': f"${summary['total_cumulative_loss']/30:.0f}M USD",
+                'gdp_impact': f"{summary['average_gdp_slowdown']:.2f}% global slowdown per day",
+                'most_affected': summary['top_affected_countries'][0]['country'] if summary['top_affected_countries'] else 'Unknown'
+            }
+        }
+        return jsonify(message)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
+# ============================================
+# STARTUP
+# ============================================
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        initialize_data()
+        
+        # Schedule daily update at 12:00 AM
+        scheduler.add_job(
+            func=update_war_data,
+            trigger='cron',
+            hour=0,
+            minute=0,
+            id='daily_war_update',
+            name='Update war impact data daily',
+            replace_existing=True
+        )
+    
+    print("✓ Backend server starting...")
+    print("✓ API available at http://localhost:5000")
+    print("✓ Scheduler activated - daily updates at 12:00 AM")
+    
+    app.run(debug=True, port=5000)
