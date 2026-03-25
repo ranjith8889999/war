@@ -42,17 +42,17 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 RUN mkdir -p /app/logs && chmod 777 /app/logs
 
 # Expose port
-EXPOSE 5000
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:5000/api/health || exit 1
+    CMD curl -f http://localhost:80/api/health || exit 1
 
 # Set environment variables
 ENV FLASK_APP=backend/app.py
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
-ENV PORT=5000
+ENV PORT=80
 
 # Run the backend server with Gunicorn (production WSGI server)
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "backend.app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "backend.app:app"]

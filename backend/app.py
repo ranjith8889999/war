@@ -503,7 +503,7 @@ if __name__ == '__main__':
             logger.error(f"Failed to configure scheduled task: {str(e)}", exc_info=True)
     
     # Get port from environment or use default
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 80))
     debug = os.getenv('FLASK_ENV', 'development') == 'development'
     
     logger.info("=" * 80)
