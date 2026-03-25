@@ -5,7 +5,7 @@ WORKDIR /app/frontend
 
 # Copy frontend files
 COPY frontend/package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --legacy-peer-deps
 
 COPY frontend ./
 RUN npm run build
