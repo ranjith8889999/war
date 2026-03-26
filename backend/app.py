@@ -102,34 +102,138 @@ class GlobalMetrics(db.Model):
 # ============================================
 # DATA INITIALIZATION
 # ============================================
+# Updated as of March 26, 2026 - Source: war_latest.txt
 
 COUNTRY_DATA = {
     'direct_war': {
-        'Israel': {'daily_loss': 414, 'category': 'Direct War'},
-        'USA': {'daily_loss': 1000, 'category': 'Direct War'},
-        'Iran': {'daily_loss': 300, 'category': 'Direct War'},
-    },
-    'energy_exporters': {
-        'Saudi Arabia': {'daily_loss': 1000, 'category': 'Energy Exporter', 'energy_impact': '+19.1% GDP from oil prices'},
-        'UAE': {'daily_loss': 350, 'category': 'Energy Exporter', 'energy_impact': 'High revenue gains'},
-        'Qatar': {'daily_loss': 300, 'category': 'Energy Exporter', 'energy_impact': '17% LNG capacity loss'},
-        'Kuwait': {'daily_loss': 200, 'category': 'Energy Exporter', 'energy_impact': 'Export constrained'},
-        'Oman': {'daily_loss': 150, 'category': 'Energy Exporter', 'energy_impact': 'Refinancing risks'},
-        'Iraq': {'daily_loss': 300, 'category': 'Energy Exporter', 'energy_impact': 'Critical exporter'},
+        'United States': {
+            'daily_loss': 695.5,  # Direct war: $500-891M avg + Oil consumption cost: $290M - Using midpoint for direct (695.5)
+            'category': 'Direct War',
+            'energy_impact': 'Combat costs $500-891M/day; consumer gas prices +33%'
+        },
+        'Israel': {
+            'daily_loss': 320,  # Direct military expenditure
+            'category': 'Direct War',
+            'energy_impact': 'Daily military burn: $320M; Q2 1.0% contraction'
+        },
+        'Iran': {
+            'daily_loss': 175,  # Direct war costs $150-200M/day midpoint
+            'category': 'Direct War',
+            'energy_impact': '10%+ GDP contraction; food inflation 70%'
+        },
+        'Saudi Arabia': {
+            'daily_loss': 180,  # Revenue loss from Strait closure
+            'category': 'Energy Exporter',
+            'energy_impact': '3.0% GDP contraction; Vision 2030 projects halted'
+        },
+        'Kuwait': {
+            'daily_loss': 10,  # Revenue loss $8-12M/day midpoint
+            'category': 'Energy Exporter',
+            'energy_impact': '14.0% GDP contraction; output cut from 3M to 500k bpd'
+        },
+        'Oman': {
+            'daily_loss': 3,  # Revenue loss $2-4M/day midpoint
+            'category': 'Energy Exporter',
+            'energy_impact': '1.8% growth downgrade; Green hydrogen projects delayed'
+        },
     },
     'energy_importers': {
-        'South Korea': {'daily_loss': 892, 'category': 'Energy Importer', 'energy_impact': '73% from Gulf - CRITICAL'},
-        'Germany': {'daily_loss': 742, 'category': 'Energy Importer', 'energy_impact': '1.5% GDP energy deficit'},
-        'India': {'daily_loss': 685, 'category': 'Energy Importer', 'energy_impact': '2.6% GDP energy deficit'},
-        'UK': {'daily_loss': 580, 'category': 'Energy Importer', 'energy_impact': '+0.5% inflation expected'},
-        'Egypt': {'daily_loss': 550, 'category': 'Energy Importer', 'energy_impact': '+$6.8B annual import'},
-        'France': {'daily_loss': 420, 'category': 'Energy Importer', 'energy_impact': 'Industrial slowdown'},
-        'Bangladesh': {'daily_loss': 245, 'category': 'Energy Importer', 'energy_impact': 'High vulnerability'},
-        'Pakistan': {'daily_loss': 320, 'category': 'Energy Importer', 'energy_impact': 'Energy-dependent'},
-        'Sri Lanka': {'daily_loss': 125, 'category': 'Energy Importer', 'energy_impact': 'Economic pressure'},
+        'India': {
+            'daily_loss': 265,  # Oil: $220M + Gas: $45M
+            'category': 'Energy Importer',
+            'energy_impact': '55% oil from Middle East; 9.3M workers in Gulf; Rupee at all-time low'
+        },
+        'Germany': {
+            'daily_loss': 250,  # Oil: $115M + Gas: $135M
+            'category': 'Energy Importer',
+            'energy_impact': 'Dutch TTF gas doubled; chemical/steel surcharges +30%'
+        },
+        'Japan': {
+            'daily_loss': 195,  # Oil: $110M + Gas: $85M
+            'category': 'Energy Importer',
+            'energy_impact': 'Critical LNG dependence; supply chain disruption'
+        },
+        'Pakistan': {
+            'daily_loss': 43,  # Oil: $19M + Gas: $24M
+            'category': 'Energy Importer',
+            'energy_impact': '100% crude from Saudi/UAE; 99% LNG from Qatar; default risk'
+        },
+        'Bangladesh': {
+            'daily_loss': 27,  # Oil: $13M + Gas: $14M
+            'category': 'Energy Importer',
+            'energy_impact': '80% energy from Middle East; fuel rationing; 4-day work week'
+        },
+        'Sri Lanka': {
+            'daily_loss': 14,  # Oil: $6M + Gas: $8M
+            'category': 'Energy Importer',
+            'energy_impact': '15L weekly fuel limit; tourism collapse'
+        },
+    },
+    'energy_exporters': {
+        'UAE': {
+            'daily_loss': 300,  # Part of $15.1B GCC collective loss, estimated share
+            'category': 'Energy Exporter',
+            'energy_impact': 'Shipping paralysis; aviation hub collapse'
+        },
+        'Qatar': {
+            'daily_loss': 250,  # Part of $15.1B GCC collective loss
+            'category': 'Energy Exporter',
+            'energy_impact': '17% LNG capacity loss; world\'s largest facility damaged'
+        },
+        'Iraq': {
+            'daily_loss': 140,  # Based on $2.0B total, per day estimate
+            'category': 'Energy Exporter',
+            'energy_impact': '90% govt revenue from oil; exports halted'
+        },
+    },
+    'other_affected': {
+        'South Korea': {
+            'daily_loss': 800,  # Estimated from 73% Gulf dependence
+            'category': 'Energy Importer',
+            'energy_impact': '73% energy from Gulf; returning to coal power'
+        },
+        'UK': {
+            'daily_loss': 450,  # Estimated based on EU patterns
+            'category': 'Energy Importer',
+            'energy_impact': '+0.5% inflation; market development risks'
+        },
+        'Egypt': {
+            'daily_loss': 500,  # UN estimates $6.8B combined with Tunisia
+            'category': 'Energy Importer',
+            'energy_impact': 'Suez Canal revenue loss; food/fuel inflation spiraling'
+        },
+        'France': {
+            'daily_loss': 380,  # Estimated EU industrial impact
+            'category': 'Energy Importer',
+            'energy_impact': 'Industrial slowdown; Air France-KLM disruption'
+        },
+        'China': {
+            'daily_loss': 400,  # Moderate impact, buffered by reserves
+            'category': 'Energy Importer',
+            'energy_impact': 'Strategic reserves buffer; increased Iranian imports'
+        },
+        'Philippines': {
+            'daily_loss': 180,  # 4-day work week impact
+            'category': 'Energy Importer',
+            'energy_impact': '4-day work week for fuel conservation'
+        },
     },
     'exporters_winners': {
-        'Norway': {'daily_loss': -250, 'category': 'Energy Exporter', 'energy_impact': '+19.1% GDP surplus - WINNER'},
+        'Russia': {
+            'daily_loss': -180,  # $5B gain by end of March / ~28 days
+            'category': 'Energy Exporter',
+            'energy_impact': 'Sanctions relaxed; crude to India +50%; biggest revenue year since 2022'
+        },
+        'Norway': {
+            'daily_loss': -200,  # Estimated gains from increased exports
+            'category': 'Energy Exporter',
+            'energy_impact': 'Positioned as stable supplier; record demand'
+        },
+        'Canada': {
+            'daily_loss': -150,  # Estimated gains from oil exports
+            'category': 'Energy Exporter',
+            'energy_impact': 'Values-based energy source; increased market share'
+        },
     }
 }
 
@@ -183,10 +287,10 @@ def initialize_data():
         global_metric = GlobalMetrics(
             date=today,
             global_daily_loss=total_daily_loss,
-            global_gdp_slowdown=0.18,  # 0.18% global GDP slowdown per day
-            trade_loss=340,  # $340 million in trade losses per day
-            oil_price=120,  # $120/barrel
-            strait_closure_percent=97
+            global_gdp_slowdown=0.0014,  # Updated: 0.0014% of annual output per day (from 3.3% to 2.6-2.8%)
+            trade_loss=2400,  # Updated: $2.4 billion in stuck goods per day through Hormuz
+            oil_price=110,  # Updated: $110/barrel baseline (range $95-119)
+            strait_closure_percent=97  # Maintained: 97% traffic reduction
         )
         db.session.add(global_metric)
         db.session.commit()
@@ -240,9 +344,9 @@ def update_war_data():
         global_metric = GlobalMetrics(
             date=today,
             global_daily_loss=total_daily_loss,
-            global_gdp_slowdown=0.18,
-            trade_loss=340,
-            oil_price=120 + (0.5 * (today - datetime.now()).days),  # Oil price trend
+            global_gdp_slowdown=0.0014,  # 0.0014% of annual output per day
+            trade_loss=2400,  # $2.4 billion per day
+            oil_price=110 + (0.3 * (today - datetime.now()).days),  # Oil price trend from $110 baseline
             strait_closure_percent=97
         )
         db.session.add(global_metric)
