@@ -103,9 +103,16 @@ export default function Dashboard({ data, loading }) {
         </div>
 
         <div className="space-y-3">
-          {(safeSummary.top_affected_countries || []).map((country, idx) => (
+          {(safeSummary.top_affected_countries || []).map((country, idx) => {
+            if (!country || typeof country !== 'object') return null;
+            const name = String(country.country || 'Unknown');
+            const category = String(country.category || 'Unknown');
+            const dailyLoss = Number(country.daily_loss) || 0;
+            const gdpSlowdown = Number(country.gdp_slowdown_percent) || 0;
+
+            return (
             <motion.div
-              key={idx}
+              key={name + '-' + idx}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
@@ -117,20 +124,21 @@ export default function Dashboard({ data, loading }) {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-white group-hover:text-orange-400 transition-colors">
-                    {country.country}
+                    {name}
                   </p>
-                  <p className="text-xs text-gray-400">{country.category}</p>
+                  <p className="text-xs text-gray-400">{category}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-lg font-bold text-orange-400">
-                  ${country.daily_loss.toFixed(0)}M
+                  ${dailyLoss.toFixed(0)}M
                 </p>
-                <p className="text-xs text-red-400">{(country.gdp_slowdown_percent).toFixed(3)}%/day</p>
+                <p className="text-xs text-red-400">{gdpSlowdown.toFixed(3)}%/day</p>
               </div>
               <ChevronRight className="text-gray-600 group-hover:text-orange-500 transition-colors ml-2" />
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         <motion.div
