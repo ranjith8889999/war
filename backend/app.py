@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from apscheduler.schedulers.background import BackgroundScheduler
+# from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import sqlite3
 from dotenv import load_dotenv
@@ -49,11 +49,11 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 db = SQLAlchemy(app)
 logger.info(f"Database configured: {database_url}")
 
-# Scheduler setup
-scheduler = BackgroundScheduler()
-scheduler.start()
-logger.info("APScheduler initialized and started")
-atexit.register(lambda: scheduler.shutdown())
+# Scheduler setup (commented out)
+# scheduler = BackgroundScheduler()
+# scheduler.start()
+# logger.info("APScheduler initialized and started")
+# atexit.register(lambda: scheduler.shutdown())
 
 # ============================================
 # DATABASE MODELS
@@ -102,37 +102,85 @@ class GlobalMetrics(db.Model):
 # ============================================
 # DATA INITIALIZATION
 # ============================================
-# Updated as of March 26, 2026 - Source: war_latest.txt
+# Updated as of April 9, 2026 (Day 41) - Source: war_latest.txt
 
 COUNTRY_DATA = {
     'direct_war': {
         'United States': {
-            'daily_loss': 695.5,  # Direct war: $500-891M avg + Oil consumption cost: $290M - Using midpoint for direct (695.5)
+            'daily_loss': 695.5,  # Direct war: $500-891M avg; Oil consumer cost: $290M/day
+            'cumulative_war': 31500,  # ~$31.5B direct war losses
+            'cumulative_oil': 11800,  # ~$11.8B consumer oil cost
+            'cumulative_gas': 0,  # N/A (Net Exporter)
+            'daily_war': 695.5,  # $500M - $891M midpoint
+            'daily_oil': 290,  # $290M consumer
+            'daily_gas': 0,
+            'gdp_impact': 'Growth cut to 2.5%',
+            'opportunity_cost': 'Cancel all medical debt or fund community college for 10 years',
             'category': 'Direct War',
-            'energy_impact': 'Combat costs $500-891M/day; consumer gas prices +33%'
+            'energy_impact': 'Combat costs $500-891M/day; consumer gas prices +33%; Growth cut to 2.5%'
         },
         'Israel': {
-            'daily_loss': 320,  # Direct military expenditure
+            'daily_loss': 435,  # Direct war: $320-550M midpoint
+            'cumulative_war': 16200,  # ~$16.2B direct war losses
+            'cumulative_oil': 650,  # ~$650M oil costs
+            'cumulative_gas': 180,  # ~$180M gas costs
+            'daily_war': 435,  # $320M - $550M midpoint
+            'daily_oil': 18,
+            'daily_gas': 6,
+            'gdp_impact': '1.0% Q2 Contraction',
+            'opportunity_cost': 'Fund $50B Tel Aviv Metro or tech-capital infrastructure',
             'category': 'Direct War',
-            'energy_impact': 'Daily military burn: $320M; Q2 1.0% contraction'
+            'energy_impact': 'Daily military burn: $320-550M; 1.0% Q2 contraction'
         },
         'Iran': {
-            'daily_loss': 175,  # Direct war costs $150-200M/day midpoint
+            'daily_loss': 460,  # Direct war: $150-200M + stranded oil: $210M + gas: $75M
+            'cumulative_war': 22500,  # ~$22.5B damage
+            'cumulative_oil': 8400,  # ~$8.4B lost oil revenue
+            'cumulative_gas': 2800,  # ~$2.8B lost gas revenue
+            'daily_war': 175,  # $150M - $200M midpoint
+            'daily_oil': 210,  # $210M stranded
+            'daily_gas': 75,
+            'gdp_impact': '10%+ Contraction',
+            'opportunity_cost': 'Stabilize the Rial or fund domestic food security',
             'category': 'Direct War',
-            'energy_impact': '10%+ GDP contraction; food inflation 70%'
+            'energy_impact': '10%+ GDP contraction; food inflation 70%; $210M/day stranded oil'
         },
         'Saudi Arabia': {
-            'daily_loss': 180,  # Revenue loss from Strait closure
+            'daily_loss': 562,  # Revenue: $180M + stranded oil: $360M + gas: $22M
+            'cumulative_war': 6800,  # ~$6.8B damage/loss
+            'cumulative_oil': 13500,  # ~$13.5B food/logistics
+            'cumulative_gas': 610,  # ~$610M gas
+            'daily_war': 180,
+            'daily_oil': 360,  # $360M stranded
+            'daily_gas': 22,
+            'gdp_impact': '3.0% GDP Contraction',
+            'opportunity_cost': 'Vision 2030 flagship projects like NEOM and Mukaab',
             'category': 'Energy Exporter',
-            'energy_impact': '3.0% GDP contraction; Vision 2030 projects halted'
+            'energy_impact': '3.0% GDP contraction; Vision 2030 projects halted; $360M/day stranded oil'
         },
         'Kuwait': {
-            'daily_loss': 10,  # Revenue loss $8-12M/day midpoint
+            'daily_loss': 296,  # Direct: $12-15M + stranded oil: $275M + gas: $9M
+            'cumulative_war': 9800,  # ~$9.8B revenue loss
+            'cumulative_oil': 880,  # ~$880M non-oil
+            'cumulative_gas': 240,  # ~$240M gas
+            'daily_war': 13.5,  # $12-15M midpoint
+            'daily_oil': 275,  # $275M stranded
+            'daily_gas': 9,
+            'gdp_impact': '14.0% GDP Contraction',
+            'opportunity_cost': 'Diversify sovereign wealth fund assets',
             'category': 'Energy Exporter',
             'energy_impact': '14.0% GDP contraction; output cut from 3M to 500k bpd'
         },
         'Oman': {
-            'daily_loss': 3,  # Revenue loss $2-4M/day midpoint
+            'daily_loss': 65,  # Direct: $4-6M + stranded oil: $55M + gas: $5M
+            'cumulative_war': 1900,  # ~$1.9B
+            'cumulative_oil': 640,  # ~$640M
+            'cumulative_gas': 160,  # ~$160M
+            'daily_war': 5,  # $4-6M midpoint
+            'daily_oil': 55,  # $55M stranded
+            'daily_gas': 5,
+            'gdp_impact': '1.8% Growth Downgrade',
+            'opportunity_cost': 'Green hydrogen and digital tax infrastructure',
             'category': 'Energy Exporter',
             'energy_impact': '1.8% growth downgrade; Green hydrogen projects delayed'
         },
@@ -140,8 +188,16 @@ COUNTRY_DATA = {
     'energy_importers': {
         'India': {
             'daily_loss': 265,  # Oil: $220M + Gas: $45M
+            'cumulative_war': 7400,  # ~$7.4B CAD
+            'cumulative_oil': 8100,  # ~$8.1B import bill
+            'cumulative_gas': 2100,  # ~$2.1B gas
+            'daily_war': 0,
+            'daily_oil': 220,
+            'daily_gas': 45,
+            'gdp_impact': 'Growth cut to 5.9%',
+            'opportunity_cost': 'IMEC corridor and "Atmanirbhar" infrastructure',
             'category': 'Energy Importer',
-            'energy_impact': '55% oil from Middle East; 9.3M workers in Gulf; Rupee at all-time low'
+            'energy_impact': '55% oil from Middle East; 9.3M workers in Gulf; Growth cut to 5.9%'
         },
         'Germany': {
             'daily_loss': 250,  # Oil: $115M + Gas: $135M
@@ -155,33 +211,57 @@ COUNTRY_DATA = {
         },
         'Pakistan': {
             'daily_loss': 43,  # Oil: $19M + Gas: $24M
+            'cumulative_war': 2600,  # ~$2.6B
+            'cumulative_oil': 1900,  # ~$1.9B
+            'cumulative_gas': 740,  # ~$740M
+            'daily_war': 0,
+            'daily_oil': 19,
+            'daily_gas': 24,
+            'gdp_impact': '1.5% GDP Slowdown',
+            'opportunity_cost': 'Roll over $1B eurobonds or stabilize currency',
             'category': 'Energy Importer',
-            'energy_impact': '100% crude from Saudi/UAE; 99% LNG from Qatar; default risk'
+            'energy_impact': '100% crude from Saudi/UAE; 99% LNG from Qatar; 1.5% GDP Slowdown'
         },
         'Bangladesh': {
             'daily_loss': 27,  # Oil: $13M + Gas: $14M
+            'cumulative_war': 1600,  # ~$1.6B
+            'cumulative_oil': 1200,  # ~$1.2B
+            'cumulative_gas': 390,  # ~$390M
+            'daily_war': 0,
+            'daily_oil': 13,
+            'daily_gas': 14,
+            'gdp_impact': '1.2% - 3.0% GDP Contraction',
+            'opportunity_cost': 'Power garment factories or secure food imports',
             'category': 'Energy Importer',
-            'energy_impact': '80% energy from Middle East; fuel rationing; 4-day work week'
+            'energy_impact': '80% energy from Middle East; fuel rationing; 1.2-3.0% GDP contraction'
         },
         'Sri Lanka': {
             'daily_loss': 14,  # Oil: $6M + Gas: $8M
+            'cumulative_war': 890,  # ~$890M
+            'cumulative_oil': 710,  # ~$710M
+            'cumulative_gas': 245,  # ~$245M
+            'daily_war': 0,
+            'daily_oil': 6,
+            'daily_gas': 8,
+            'gdp_impact': '2.0% GDP Slowdown',
+            'opportunity_cost': 'Recover from debt default and end fuel rationing',
             'category': 'Energy Importer',
-            'energy_impact': '15L weekly fuel limit; tourism collapse'
+            'energy_impact': '15L weekly fuel limit; tourism collapse; 2.0% GDP Slowdown'
         },
     },
     'energy_exporters': {
         'UAE': {
-            'daily_loss': 300,  # Part of $15.1B GCC collective loss, estimated share
+            'daily_loss': 300,  # Part of GCC collective loss
             'category': 'Energy Exporter',
             'energy_impact': 'Shipping paralysis; aviation hub collapse'
         },
         'Qatar': {
-            'daily_loss': 250,  # Part of $15.1B GCC collective loss
+            'daily_loss': 250,  # Part of GCC collective loss
             'category': 'Energy Exporter',
             'energy_impact': '17% LNG capacity loss; world\'s largest facility damaged'
         },
         'Iraq': {
-            'daily_loss': 140,  # Based on $2.0B total, per day estimate
+            'daily_loss': 140,  # Based on oil export halt
             'category': 'Energy Exporter',
             'energy_impact': '90% govt revenue from oil; exports halted'
         },
@@ -259,7 +339,13 @@ def initialize_data():
         
         for country, data in all_countries_combined.items():
             daily_loss = data['daily_loss']
-            cumulative_loss = daily_loss * 30  # 30 days of losses
+            # Use actual cumulative data if available, otherwise estimate from daily * 41 days
+            cumulative_war = data.get('cumulative_war', 0)
+            cumulative_oil = data.get('cumulative_oil', 0)
+            cumulative_gas = data.get('cumulative_gas', 0)
+            cumulative_loss = cumulative_war + cumulative_oil + cumulative_gas
+            if cumulative_loss == 0:
+                cumulative_loss = daily_loss * 41  # 41 days of conflict (Day 41)
             
             # Calculate GDP slowdown
             if 'Energy Importer' in data['category']:
@@ -287,7 +373,7 @@ def initialize_data():
         global_metric = GlobalMetrics(
             date=today,
             global_daily_loss=total_daily_loss,
-            global_gdp_slowdown=0.0014,  # Updated: 0.0014% of annual output per day (from 3.3% to 2.6-2.8%)
+            global_gdp_slowdown=0.0014,  # Updated: 0.0014% of annual output per day (growth revised down 0.3pp)
             trade_loss=2400,  # Updated: $2.4 billion in stuck goods per day through Hormuz
             oil_price=110,  # Updated: $110/barrel baseline (range $95-119)
             strait_closure_percent=97  # Maintained: 97% traffic reduction
@@ -591,20 +677,20 @@ with app.app_context():
         logger.error(f"Failed to initialize database: {str(e)}", exc_info=True)
         raise
     
-    # Schedule daily update at 12:00 AM
-    try:
-        scheduler.add_job(
-            func=update_war_data,
-            trigger='cron',
-            hour=0,
-            minute=0,
-            id='daily_war_update',
-            name='Update war impact data daily',
-            replace_existing=True
-        )
-        logger.info("✓ Scheduled task configured: War data update at 12:00 AM")
-    except Exception as e:
-        logger.error(f"Failed to configure scheduled task: {str(e)}", exc_info=True)
+    # Schedule daily update at 12:00 AM (commented out)
+    # try:
+    #     scheduler.add_job(
+    #         func=update_war_data,
+    #         trigger='cron',
+    #         hour=0,
+    #         minute=0,
+    #         id='daily_war_update',
+    #         name='Update war impact data daily',
+    #         replace_existing=True
+    #     )
+    #     logger.info("✓ Scheduled task configured: War data update at 12:00 AM")
+    # except Exception as e:
+    #     logger.error(f"Failed to configure scheduled task: {str(e)}", exc_info=True)
 
 logger.info("=" * 80)
 logger.info("✓ Backend initialized and ready")
@@ -621,7 +707,7 @@ if __name__ == '__main__':
     logger.info(f"✓ API available at http://localhost:{port}")
     logger.info(f"✓ Environment: {'Development' if debug else 'Production'}")
     logger.info(f"✓ Logs directory: {LogConfig.LOGS_DIR}")
-    logger.info("✓ Scheduler activated - daily updates at 12:00 AM")
+    # logger.info("✓ Scheduler activated - daily updates at 12:00 AM")
     logger.info("=" * 80)
     
     app.run(debug=debug, host='0.0.0.0', port=port)

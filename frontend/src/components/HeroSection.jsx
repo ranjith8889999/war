@@ -4,8 +4,8 @@ import { TrendingDown, DollarSign, Globe, AlertTriangle } from 'lucide-react';
 
 export default function HeroSection() {
   const stats = [
-    { icon: DollarSign, label: '$1+ Trillion Lost', value: 'Economic damage', color: 'from-red-500 to-orange-500' },
-    { icon: TrendingDown, label: '-0.18% Daily', value: 'Global GDP Slowdown', color: 'from-orange-500 to-yellow-500' },
+    { icon: DollarSign, label: '$1+ Trillion Lost', value: 'Day 41 - Economic damage', color: 'from-red-500 to-orange-500' },
+    { icon: TrendingDown, label: '-0.3% GDP Cut', value: 'Global GDP Slowdown', color: 'from-orange-500 to-yellow-500' },
     { icon: Globe, label: '97% Closed', value: 'Strait of Hormuz', color: 'from-yellow-500 to-red-500' },
     { icon: AlertTriangle, label: '50+ Countries', value: 'Economically Affected', color: 'from-red-500 to-pink-500' },
   ];
