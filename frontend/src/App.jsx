@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
+import CeasefireFramework from './components/CeasefireFramework';
 
 // Configure axios defaults
 axios.defaults.timeout = 10000; // 10 second timeout
@@ -63,6 +64,7 @@ function App() {
       
       <main className="container mx-auto px-4">
         <HeroSection />
+        <CeasefireFramework />
         
         {error && (
           <motion.div 
